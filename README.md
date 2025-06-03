@@ -41,8 +41,8 @@ PWM 기능을 위해 3,9,10,11 번 사용했습니다.
 -> 문제 이유 : 화면에 보이는 검은 선을 따라 라인 트레이싱을 해야하는데
              차량 앞에 나온 범퍼(검정색)로 인해 부적합한 인식을 하게 됨
 -> 해결 : 인식 범위를 범퍼 위로 수정
-기존 코드 
-![image](https://github.com/user-attachments/assets/31e8441e-d1d3-4768-9182-f7a294634a7a)
+기존 코드 \n
+![image](https://github.com/user-attachments/assets/31e8441e-d1d3-4768-9182-f7a294634a7a) \n
 ![image](https://github.com/user-attachments/assets/597e1981-e031-4db1-a981-261950807e33)
 
 아래로 변경
