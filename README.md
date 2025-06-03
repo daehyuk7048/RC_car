@@ -25,16 +25,7 @@ PWM 기능을 위해 3,9,10,11 번 사용했습니다.
 
 아두이노 pin A0, A1, A2 , 4, 3 ,9 ,10 ,11
 
-
-![KakaoTalk_20250514_181123627](https://github.com/user-attachments/assets/b6850e2b-bf59-49b7-8f3f-581702cb7f3d)
-
-
-
 수신기 CH 1, 2, 5
-
-
-![KakaoTalk_20250514_145847156](https://github.com/user-attachments/assets/95692598-d7ac-434e-909f-235e779a0b8e)
-
 
 
 -------------------------------------------
@@ -49,7 +40,17 @@ PWM 기능을 위해 3,9,10,11 번 사용했습니다.
 2문제 : line tracing 인식 박스 조절
 -> 문제 이유 : 화면에 보이는 검은 선을 따라 라인 트레이싱을 해야하는데
              차량 앞에 나온 범퍼(검정색)로 인해 부적합한 인식을 하게 됨
--> 해결 : 기존 코드 
+-> 해결 : 인식 범위를 범퍼 위로 수정
+기존 코드 
+![image](https://github.com/user-attachments/assets/31e8441e-d1d3-4768-9182-f7a294634a7a)
+![image](https://github.com/user-attachments/assets/597e1981-e031-4db1-a981-261950807e33)
+
+아래로 변경
+![image](https://github.com/user-attachments/assets/b4039fb6-66c8-4685-9860-9c70a18f2486)
+![image](https://github.com/user-attachments/assets/b640d3a9-1ead-4a60-9290-4e4eaea93f95)
+
+
+
 
 
 
