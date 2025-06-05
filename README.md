@@ -1,48 +1,55 @@
-# RC_LED
+# RC_car
 
 -----------------------------------------
 영상
 
-https://youtu.be/C98HGoryuOc?si=kkGU_v5Z_UBAd2JV
+
 
  ----------------------------------------
-| RC 채널 매핑 | <-> | 핀 매핑 |
-|:-----:|-------:|:----------------|
-| CH5 | A2 | line tracing mode on/off |
-|CH2| A1 | RC car 방향 조절 |
-|CH1| A0| RC car 속도 조절|
+회로도 구성
+-
+ 
+| Receiver CH | 기능 (RC -> 차량)            | Arduino 핀 |
+| :---------: | :----------------------- | :-------: |
+|   **CH 5**  | 매뉴얼 / 라인-트레이싱 모드 스위치     |   **A2**  |
+|   **CH 2**  | **Throttle** – 속도 제어     |   **A1**  |
+|   **CH 1**  | **Steering** – 방향(조향) 제어 |   **A0**  |
 
 -----------------------------------------
 
-| A2 연결 핀| A1 연결 핀| A0 연결 핀|
-|:---------:|:---------:|:-----------:|
-|4|3|9,10,11|
-
-PWM 기능을 위해 3,9,10,11 번 사용했습니다.
-
-----------------------------------------
-회로도 구성
-
-아두이노 pin A0, A1, A2 , 4, 3 ,9 ,10 ,11
-
-수신기 CH 1, 2, 5
-
+| Arduino 핀 | 연결 대상        | 용도                                  | PWM |
+| :-------: | :----------- | :---------------------------------- | :-: |
+|   **4**   | LED\_L       | 좌측 방향 LED                           |  ✕  |
+|   **3**   | LED\_R       | 우측 방향 LED *(PWM 핀이지만 Digital 로 사용)* |  ✓  |
+|   **9**   | ESC Signal   | 모터 ESC 스로틀 PWM                      |  ✓  |
+|   **10**  | Servo Signal | 조향 서보 PWM                           |  ✓  |
+|   **11**  | (Reserved)   | 예비 / 향후 확장                          |  ✓  |
 
 -------------------------------------------
 주요 아이디어
 -
 
-Picamera2 + OpenCV 로 바닥 검은 선(Line)을 감지해서 ──▶  Arduino 로 L / R / F / B 명령 전송 <br>
-Flask 로 MJPEG 실시간 스트림을 보여주며 (라즈베리파이용 경량 비동기 설계) <br>
+Picamera2 + OpenCV 로 바닥 검은 선(Line)을 감지해서 ──▶   Arduino 로 'P' + steerByte + thrByte 명령 전송 <br>
+Flask 로 MJPEG 실시간 스트림을 보여주며 (라즈베리파이용 경량 비동기 설계) <br>
+라인 재탐색 기능 및 아두이노 3바이트 프로토콜 적용 <br>
 
-1) camera_loop ──> Picamera2 프레임 캡처 → 방향 분석 → 주기적으로 시리얼 전송 <br>
-2) detect_direction() ──> ROI(관심영역) 내에서 adaptiveThreshold + contour 로 선 중심 계산
-   · 선이 없으면 'B' (후진) 반환 <br>
-3) send_dir() ──> 같은 방향이라도 RESEND_FRAMES 마다 한 번 더 전송 (ESC 브레이크↔후진 대응) <br>
-4) Flask 는 latest_frame 바이트를 MJPEG boundary 로 스트리밍 <br>
+# ┌─────────────────────────────────────────────────────────────────────────────┐
+# │  📌  전체 흐름 요약                                                         │
+# │  ├─ Picamera2로 프레임 캡처 → ROI 이진화로 검은 선 중심 오프셋 계산          │
+# │  │                                                                         │
+# │  ├─ FSM(FORWARD·REVERSING·SEARCHING) 로 주행 상태 관리                      │
+# │  │   • 라인 놓치면 → 후진(REVERSING) → 좌 / 우 까딱 탐색(SEARCHING) → 복귀   │
+# │  │                                                                         │
+# │  ├─ calculate_control_bytes()   : 오프셋·모드별 스티어/스로틀 바이트 산출    │
+# │  ├─ send_control_command()      : ‘P + 2byte’ 프로토콜로 아두이노에 전송     │
+# │  ├─ camera_loop()               : ↑ 모든 비전 + FSM + TX 수행, MJPEG 프레임  │
+# │  └─ Flask /video_feed           : latest_frame 를 MJPEG 스트림으로 제공      │
+# └─────────────────────────────────────────────────────────────────────────────┘
 
-※ "L" 헤더 + 1 문자 명령 형태(LF/LL/LR/LB) : Arduino 스케치와 맞춤
-※ 좌우 보정: 카메라 영상을 1 회 flip 한 좌표계로 통일
+
+-------------------------------------------
+
+
 
 -------------------------------------------
 문제해결
@@ -53,8 +60,19 @@ Flask 로 MJPEG 실시간 스트림을 보여주며 (라즈베리파이용 경�
 -> 문제 이유 : 조종기에서 보내는 펄스를 그대로 받아 maping하면
               속도가 너무 빨라 pulse를 최대로 줄 경우 장비 파손 문제 발생 <br>
 -> 해결 : 손수 임의 값을 대입하여 적당한 속도의 후진, 정지 ,적당한 속도의 전진 값을 찾아냈습니다. <br>
+채널 대역폭 <br>
+![image](https://github.com/user-attachments/assets/351ae541-a1d7-4aa3-a436-8c96093bbac9) <br>
+속도 조절된 변수 <br>
+![image](https://github.com/user-attachments/assets/946b2274-42a0-4090-ad39-9b144ba558ac) <br>
 
-2문제 : line tracing 인식 박스 조절 <br>
+2문제 : 축이 틀어져 있어 축보정 <br>
+-
+-> 문제 이유 : 동작을 하지 않는 정지상태에서 기본적으로 축이 10도에서 20도 정도 축이 왼쪽으로 치우져 있는 문제 발생 <br>
+-> 해결 : 조금씩 대입해서 최대한 중앙에 맞췄습니다. <br>
+![image](https://github.com/user-attachments/assets/2e324b3c-b71b-4142-bc26-89349da05405)<br>
+
+
+3문제 : line tracing 인식 박스 조절 <br>
 -
 -> 문제 이유 : 화면에 보이는 검은 선을 따라 라인 트레이싱을 해야하는데
              차량 앞에 나온 범퍼(검정색)로 인해 부적합한 인식을 하게 되는 문제 발생 <br>
@@ -64,27 +82,24 @@ Flask 로 MJPEG 실시간 스트림을 보여주며 (라즈베리파이용 경�
 ![image](https://github.com/user-attachments/assets/597e1981-e031-4db1-a981-261950807e33) <br>
 
 아래로 변경 <br>
-![image](https://github.com/user-attachments/assets/b4039fb6-66c8-4685-9860-9c70a18f2486) <br>
-![image](https://github.com/user-attachments/assets/b640d3a9-1ead-4a60-9290-4e4eaea93f95) <br>
-
-3문제 : flask를 활용하는 웹 스트리밍 속도 <br>
--
--> 문제 이유 : 화면에 나오는 선을 따라 line tracing 을 하게 되는데 지연율로 인해 화면이 멈추게 되는 문제 발생 <br>
-
--> 해결 : 해상도를 낮추어 저지연율로 전송 <br>
-
-기존 FRAME_W, FRAME_H = 640 , 480 에서 320 , 240 으로 만들었습니다. <br>
-![image](https://github.com/user-attachments/assets/dfe33734-58a2-4fd8-89a7-cfc4dcd478c8) <br>
-![image](https://github.com/user-attachments/assets/aa53b3be-07c5-4309-af7d-649e14a1fd73) <br>
-
+![image](https://github.com/user-attachments/assets/45004ddd-bf83-472b-8c6c-9f856eba87c0)<br>
+ <br>
 
 4문제 : 기본 RC car 설정 변경 <br>
 -
--> 문제 이유 : 기본 RC car 설정은 전진중 후진을 입력 받으면 정지됨 그러므로 코드를 두번 연속으로 입력 받아야함 <br>
-               이를 해결하기 위해 코드 상에서 연속으로 줄 것인지 시스템을 바꿀지 선택해야 함 <br>
+-> 문제 이유 : 기본 RC car 설정은 전진중 후진을 입력 받으면 정지됨 그러므로 코드를 두번 연속으로 입력 받아야하는 문제 발생 <br>
+               이를 해결하기 위해 코드 상에서 연속으로 줄 것인지 시스템을 바꿀지 선택. <br>
 
 -> 해결 : 시스템을 변경하는 것이 쉬운 선택이라 판단 <br>
-          전진중 후진을 입력 받으면 즉시 후진으로 변경 <br>
+          전진중 후진을 입력 받으면 즉시 후진으로 변경했습니다. <br>
+
+5문제 : line detection 에서 선을 발견 못하면 멈춰서 찾기만 하는 문제. <br>
+-
+-> 문제 이유 : 코드 상에서 후진 후에 다시 선을 찾는 코드를 해놨으나, <br>
+               너무 주기가 빨라 뒤로 움직이기도 전에 다시 좌우를 확인하여 선을 찾는 행위하는 문제가 발생 <br>
+
+-> 해결 : 보낼 때 원하는 시간 만큼 차이를 두고 전송하는 코드를 넣었습니다. <br>
+![image](https://github.com/user-attachments/assets/5e73ed50-8239-4db3-9a5a-34ed73a0ba15) <br>
 
 
 
