@@ -2,8 +2,9 @@
 
 -----------------------------------------
 영상
+-
 
-
+https://youtu.be/nqK6RFUjnTQ?si=gnZZ4QN7GVuIHTnE <br>
 
  ----------------------------------------
 회로도 구성
@@ -33,23 +34,54 @@ Picamera2 + OpenCV 로 바닥 검은 선(Line)을 감지해서 ──▶   Ardui
 Flask 로 MJPEG 실시간 스트림을 보여주며 (라즈베리파이용 경량 비동기 설계) <br>
 라인 재탐색 기능 및 아두이노 3바이트 프로토콜 적용 <br>
 
- ┌─────────────────────────────────────────────────────────────────────────────┐ <br>
- │  전체 흐름 요약                                                             │ <br>
- │  ├─ Picamera2로 프레임 캡처 → ROI 이진화로 검은 선 중심 오프셋 계산          │ <br>
- │  │                                                                          │ <br>
- │  ├─ FSM(FORWARD·REVERSING·SEARCHING) 로 주행 상태 관리                      │ <br>
- │  │   • 라인 놓치면 → 후진(REVERSING) → 좌 / 우 까딱 탐색(SEARCHING) → 복귀   │ <br>
- │  │                                                                          │ <br>
- │  ├─ calculate_control_bytes()   : 오프셋·모드별 스티어/스로틀 바이트 산출    │ <br>
- │  ├─ send_control_command()      : ‘P + 2byte’ 프로토콜로 아두이노에 전송     │ <br>
- │  ├─ camera_loop()               : ↑ 모든 비전 + FSM + TX 수행, MJPEG 프레임  │ <br>
- │  └─ Flask /video_feed           : latest_frame 를 MJPEG 스트림으로 제공      │ <br>
- └─────────────────────────────────────────────────────────────────────────────┘ <br>
-
+ ───────────────────────────────────────────────────────────────────────────── <br>
+   전체 흐름 요약                                                              <br>
+   ├─ Picamera2로 프레임 캡처 → ROI 이진화로 검은 선 중심 오프셋 계산           <br>
+   │                                                                           <br>
+   ├─ FSM(FORWARD·REVERSING·SEARCHING) 로 주행 상태 관리                       <br>
+   │   • 라인 놓치면 → 후진(REVERSING) → 좌 / 우 까딱 탐색(SEARCHING) → 복귀    <br>
+   │                                                                           <br>
+   ├─ calculate_control_bytes()   : 오프셋·모드별 스티어/스로틀 바이트 산출     <br>
+   ├─ send_control_command()      : ‘P + 2byte’ 프로토콜로 아두이노에 전송      <br>
+   ├─ camera_loop()               : ↑ 모든 비전 + FSM + TX 수행, MJPEG 프레임   <br>
+   └─ Flask /video_feed           : latest_frame 를 MJPEG 스트림으로 제공       <br>
+ ───────────────────────────────────────────────────────────────────────────── <br>
 
 -------------------------------------------
+함수 설명
+-
+함수 detect_center_offset_and_visualize <br>
+-
+-> 함수 설명 : ROI 안에서 라인을 감지하고 그 위치를 표시해주는 모듈입니다. <br>
+              인식 박스안에 선이 있으면 그 라인 중심에 녹색원이 생깁니다.  <br>
+
+![image](https://github.com/user-attachments/assets/2d61f13a-8bc2-4d88-8646-d132521526ea) <br>
+![image](https://github.com/user-attachments/assets/2b647b36-6feb-4b2d-b641-827eaac6ec34) <br>
+
+함수 calculate_control_bytes <br>
+-
+-> 함수 설명 : 조향과 스로틀을 담당하는 모듈입니다. <br>
+               FORWARD 을 받으면 라인을 감지하고 전진하며 커브 값이 크면 속도가 줄어듭니다.<br>
+               REVERSING 을 받으면 후진하고 선이 없어진 뱡향에 반대로 조향을 틀어줍니다. <br>
+               SEARCHING 을 받으면 좌우로 꺾어서 선이 있는지 확인합니다. <br>
+![image](https://github.com/user-attachments/assets/fa7df671-9ea8-4aff-9827-024e1d1a0f8b) <br>
+![image](https://github.com/user-attachments/assets/52d9155f-297d-4511-b399-48bca58bc4c2) <br>
 
 
+함수 end_control_command <br>
+-
+-> 함수 설명 : 아두이노로 조향과 스로틀을 보냅니다. <br>
+               상태를 확인하고 불필요한 명령은 보내지 않습니다. <br>
+![image](https://github.com/user-attachments/assets/ab8d41da-95e4-4af5-a19b-2505981f54f1) <br>
+
+함수 camera_loop <br>
+-
+-> 함수 설명 : 앞에 나온 3개 함수를 모아 동작합니다 <br>
+               라인을 발견하면 라인을 따라가고 이탈시 선을 찾아보고 발견하지 못할 시 후진하여 좌우를 살피게 됩니다. <br>
+![image](https://github.com/user-attachments/assets/a944bbfa-5a9c-45cd-94c2-5421e7ec94c2) <br>
+![image](https://github.com/user-attachments/assets/3e519c94-6751-4f5b-8d5a-6b66da54939b) <br>
+![image](https://github.com/user-attachments/assets/6d4324ad-d2a8-45a3-a8f6-d08795c05d31) <br>
+![image](https://github.com/user-attachments/assets/6a18fa99-ccff-4501-b8ee-74ea95b651fa) <br>
 
 -------------------------------------------
 문제해결
