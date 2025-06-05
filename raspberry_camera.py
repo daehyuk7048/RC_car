@@ -65,12 +65,12 @@ ser = None # 시리얼 객체 초기화
 try:
     # 지정된 포트와 속도로 시리얼 통신 시작, timeout은 1초
     ser = serial.Serial(SERIAL_PORT, BAUDRATE, timeout=1)
-    print(f"[✅] Serial connected: {SERIAL_PORT} @ {BAUDRATE}")
+    print(f" Serial connected: {SERIAL_PORT} @ {BAUDRATE}")
     time.sleep(2) # 아두이노 리셋 및 시리얼 안정화 대기 시간
 except serial.SerialException as e: # 시리얼 포트 관련 예외 처리
-    print(f"[❌] Serial open failed: {e}. Running without serial communication.")
+    print(f" Serial open failed: {e}. Running without serial communication.")
 except Exception as e_gen: # 그 외 모든 예외 처리
-    print(f"[❌] Serial setup error: {e_gen}. Running without serial communication.")
+    print(f" Serial setup error: {e_gen}. Running without serial communication.")
 
 # ───── 카메라 초기화 ──────────────────────────────────
 picam2 = None # Picamera2 객체 초기화
@@ -83,10 +83,10 @@ try:
     )
     picam2.configure(config) # 설정 적용
     picam2.start() # 카메라 시작
-    print("✅ Camera started successfully.")
+    print(" Camera started successfully.")
     time.sleep(1) # 카메라 센서 안정화 대기 시간
 except Exception as e:
-    print(f"[❌] Camera setup failed: {e}")
+    print(f" Camera setup failed: {e}")
     # 카메라 초기화 실패 시 picam2는 None 상태 유지
 
 # ───── Flask 및 상태 변수 ────────────────────────────────
